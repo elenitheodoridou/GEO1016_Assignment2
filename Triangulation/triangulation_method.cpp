@@ -68,66 +68,66 @@ bool Triangulation::triangulation(
                  "\t    - include all the source code (and please do NOT modify the structure of the directories).\n"
                  "\t    - do NOT include the 'build' directory (which contains the intermediate files in a build step).\n"
                  "\t    - make sure your code compiles and can reproduce your results without ANY modification.\n\n" << std::flush;
-
-    /// Below are a few examples showing some useful data structures and APIs.
-
-    /// define a 2D vector/point
-    Vector2D b(1.1, 2.2);
-
-    /// define a 3D vector/point
-    Vector3D a(1.1, 2.2, 3.3);
-
-    /// get the Cartesian coordinates of a (a is treated as Homogeneous coordinates)
-    Vector2D p = a.cartesian();
-
-    /// get the Homogeneous coordinates of p
-    Vector3D q = p.homogeneous();
-
-    /// define a 3 by 3 matrix (and all elements initialized to 0.0)
-    Matrix33 A;
-
-    /// define and initialize a 3 by 3 matrix
-    Matrix33 T(1.1, 2.2, 3.3,
-               0, 2.2, 3.3,
-               0, 0, 1);
-
-    /// define and initialize a 3 by 4 matrix
-    Matrix34 M(1.1, 2.2, 3.3, 0,
-               0, 2.2, 3.3, 1,
-               0, 0, 1, 1);
-
-    /// set first row by a vector
-    M.set_row(0, Vector4D(1.1, 2.2, 3.3, 4.4));
-
-    /// set second column by a vector
-    M.set_column(1, Vector3D(5.5, 5.5, 5.5));
-
-    /// define a 15 by 9 matrix (and all elements initialized to 0.0)
-    Matrix W(15, 9, 0.0);
-    /// set the first row by a 9-dimensional vector
-    W.set_row(0, {0, 1, 2, 3, 4, 5, 6, 7, 8}); // {....} is equivalent to a std::vector<double>
-
-    /// get the number of rows.
-    int num_rows = W.rows();
-
-    /// get the number of columns.
-    int num_cols = W.cols();
-
-    /// get the the element at row 1 and column 2
-    double value = W(1, 2);
-
-    /// get the last column of a matrix
-    Vector last_column = W.get_column(W.cols() - 1);
-
-    /// define a 3 by 3 identity matrix
-    Matrix33 I = Matrix::identity(3, 3, 1.0);
-
-    /// matrix-vector product
-    Vector3D v = M * Vector4D(1, 2, 3, 4); // M is 3 by 4
-
-    ///For more functions of Matrix and Vector, please refer to 'matrix.h' and 'vector.h'
-
-    // TODO: delete all above example code in your final submission
+//
+//    /// Below are a few examples showing some useful data structures and APIs.
+//
+//    /// define a 2D vector/point
+//    Vector2D b(1.1, 2.2);
+//
+//    /// define a 3D vector/point
+//    Vector3D a(1.1, 2.2, 3.3);
+//
+//    /// get the Cartesian coordinates of a (a is treated as Homogeneous coordinates)
+//    Vector2D p = a.cartesian();
+//
+//    /// get the Homogeneous coordinates of p
+//    Vector3D q = p.homogeneous();
+//
+//    /// define a 3 by 3 matrix (and all elements initialized to 0.0)
+//    Matrix33 A;
+//
+//    /// define and initialize a 3 by 3 matrix
+//    Matrix33 T(1.1, 2.2, 3.3,
+//               0, 2.2, 3.3,
+//               0, 0, 1);
+//
+//    /// define and initialize a 3 by 4 matrix
+//    Matrix34 M(1.1, 2.2, 3.3, 0,
+//               0, 2.2, 3.3, 1,
+//               0, 0, 1, 1);
+//
+//    /// set first row by a vector
+//    M.set_row(0, Vector4D(1.1, 2.2, 3.3, 4.4));
+//
+//    /// set second column by a vector
+//    M.set_column(1, Vector3D(5.5, 5.5, 5.5));
+//
+//    /// define a 15 by 9 matrix (and all elements initialized to 0.0)
+//    Matrix W(15, 9, 0.0);
+//    /// set the first row by a 9-dimensional vector
+//    W.set_row(0, {0, 1, 2, 3, 4, 5, 6, 7, 8}); // {....} is equivalent to a std::vector<double>
+//
+//    /// get the number of rows.
+//    int num_rows = W.rows();
+//
+//    /// get the number of columns.
+//    int num_cols = W.cols();
+//
+//    /// get the the element at row 1 and column 2
+//    double value = W(1, 2);
+//
+//    /// get the last column of a matrix
+//    Vector last_column = W.get_column(W.cols() - 1);
+//
+//    /// define a 3 by 3 identity matrix
+//    Matrix33 I = Matrix::identity(3, 3, 1.0);
+//
+//    /// matrix-vector product
+//    Vector3D v = M * Vector4D(1, 2, 3, 4); // M is 3 by 4
+//
+//    ///For more functions of Matrix and Vector, please refer to 'matrix.h' and 'vector.h'
+//
+//    // TODO: delete all above example code in your final submission
 
     //--------------------------------------------------------------------------------------------------------------
     // implementation starts ...
@@ -144,7 +144,7 @@ bool Triangulation::triangulation(
     //      - compute the essential matrix E;
     //      - recover rotation R and t.
 
-    //------------estimate the fundamental matrix F ---------------
+    //STEP 1 ------------estimate the fundamental matrix F ---------------
     //---normalization---
     //calculation of the new centroids
     float centr_x0=0;
@@ -223,69 +223,103 @@ bool Triangulation::triangulation(
     double sc_fc_x1 = sqrt(2) / mean_dist_x1;
     double sc_fc_y1 = sqrt(2) / mean_dist_y1;
 
-    Matrix m_sf_0(2,2,0.0); //scaling matrix for image 0
-    //m_sf_0.set_column(0, {sc_fc_x0, 0});
-    //m_sf_0.set_column(1, {0, sc_fc_y0});
-    m_sf_0(0,0) = sc_fc_x0;
-    m_sf_0(0,1) = 0;
-    m_sf_0(1,0) = 0;
-    m_sf_0(1,1) = sc_fc_y0;
+    Matrix m_sf_0(3,3,0.0); //scaling matrix for image 0
+    std::vector<double> row1 = {sc_fc_x0, 0, 0};
+    std::vector<double> row2 = {0,sc_fc_y0,0};
+    std::vector<double> row3 = {0,0, 1};
+    m_sf_0.set_row(0, row1);
+    m_sf_0.set_row(1, row2);
+    m_sf_0.set_row(2, row3);
 
-    Matrix m_sf_1(2,2,0.0); //scaling matrix for image 1
-    //m_sf_1.set_column(0, {sc_fc_x1, 0});
-    //m_sf_1.set_column(1, {0, sc_fc_y1});
-    m_sf_1(0,0) = sc_fc_x1;
-    m_sf_1(0,1) = 0;
-    m_sf_1(1,0) = 0;
-    m_sf_1(1,1) = sc_fc_y1;
+
+    Matrix m_sf_1(3,3,0.0); //scaling matrix for image 1
+    row1 = {sc_fc_x1, 0, 0};
+    row2 = {0,sc_fc_y1,0};
+    row3 = {0,0, 1};
+    m_sf_1.set_row(0, row1);
+    m_sf_1.set_row(1, row2);
+    m_sf_1.set_row(2, row3);
+
 
     std::vector<Vector2D> vect_scal_pt_0(points_0); //initializing vector to store the scaled points for image 0
     std::vector<Vector2D> vect_scal_pt_1(points_1);
 
     for (int i=0; i<size(points_0); i++){
         //applying the scaling
-        Matrix sc_fc_pt0(2,1,0.0); //initializing a matrix with the translated points for image 0
-        //sc_fc_pt0.set_column(0,{vect_trans_pt_0[i][0],vect_trans_pt_0[i][1]});
-        sc_fc_pt0(0,0) = vect_trans_pt_0[i][0];
-        sc_fc_pt0(1,0) = vect_trans_pt_0[i][1];
-
+        Matrix sc_fc_pt0(3,1,0.0); //initializing a matrix with the translated points for image 0
+        std::vector<double> col = {vect_trans_pt_0[i][0],vect_trans_pt_0[i][1],1};
+        sc_fc_pt0.set_column(0,col);
         Matrix pt_0_scaled =  m_sf_0 * sc_fc_pt0;
-        vect_scal_pt_0[i][0] = (pt_0_scaled(0,0));
-        vect_scal_pt_0[i][1] = (pt_0_scaled(1,0));
+        vect_scal_pt_0[i][0] = pt_0_scaled(0,0)/ pt_0_scaled(2,0);
+        vect_scal_pt_0[i][1] = pt_0_scaled(1,0)/ pt_0_scaled(2,0) ;
 
-        Matrix sc_fc_pt1(2,1,0.0);
-        //sc_fc_pt1.set_column(0,{vect_trans_pt_1[i][0],vect_trans_pt_1[i][1]});
-        sc_fc_pt1(0,0) = vect_trans_pt_1[i][0];
-        sc_fc_pt1(1,0) = vect_trans_pt_1[i][1];
+        Matrix sc_fc_pt1(3,1,0.0);//matrix for the scaling factor for image 0
+        col = {vect_trans_pt_1[i][0],vect_trans_pt_1[i][1],1};
+        sc_fc_pt1.set_column(0,col);
         Matrix pt_1_scaled =  m_sf_1 * sc_fc_pt1;
-        vect_scal_pt_1[i][0] = (pt_1_scaled(0,0));
-        vect_scal_pt_1[i][1] = (pt_1_scaled(1,0));
+        vect_scal_pt_1[i][0] = (pt_1_scaled(0,0) / pt_1_scaled(2,0));
+        vect_scal_pt_1[i][1] = (pt_1_scaled(1,0)) / pt_1_scaled(2,0);
         }
 
-    //crating matrix W
-    Matrix m_W(size(points_0), 8);
+    //creating matrix W
+    Matrix m_W(size(points_0), 9);
     for (int i=0; i<size(points_0); i++){
-        m_W.set_row(i,{vect_scal_pt_0[i][0]*vect_scal_pt_1[i][0], vect_scal_pt_0[i][1]* vect_scal_pt_1[i][0], vect_scal_pt_1[i][0], vect_scal_pt_0[i][0]*vect_scal_pt_1[i][1], vect_scal_pt_0[i][1]*vect_scal_pt_1[i][1], vect_scal_pt_1[i][1], vect_scal_pt_0[i][0], 1});
+        m_W.set_row(i,{vect_scal_pt_0[i][0]*vect_scal_pt_1[i][0], vect_scal_pt_0[i][1]* vect_scal_pt_1[i][0], vect_scal_pt_1[i][0], vect_scal_pt_0[i][0]*vect_scal_pt_1[i][1], vect_scal_pt_0[i][1]*vect_scal_pt_1[i][1], vect_scal_pt_1[i][1], vect_scal_pt_0[i][0], vect_scal_pt_0[i][1], 1});
     }
 
-    std::cout << m_W << "m_W" << std::endl;
+    //---Linear solution (based on SVD)---
+    // SVD decomposition so that Wf=0
+    Matrix matrix_U(size(points_0), size(points_0), 0.0);
+    Matrix matrix_S(size(points_0), 9, 0.0);
+    Matrix matrix_V(9, 9, 0.0);
+
+    svd_decompose(m_W, matrix_U, matrix_S, matrix_V);
+
+    //Computing vector f
+    Vector vector_f = matrix_V.get_column(matrix_V.cols()-1);
+
+    //Computing matrix F
+    Matrix matrix_F(3, 3, 0.0);
+    matrix_F.set_row(0, {vector_f[0], vector_f[1], vector_f[2]});
+    matrix_F.set_row(1, {vector_f[3], vector_f[4], vector_f[5]});
+    matrix_F.set_row(2, {vector_f[6], vector_f[7], vector_f[8]});
+
+    //Constraint enforcement (based on SVD) to find the closest rank-2 matrix
+    Matrix matrix_FU(3, 3, 0.0);
+    Matrix matrix_FS(3, 3, 0.0);
+    Matrix matrix_FV(3, 3, 0.0);
+
+    svd_decompose(matrix_F, matrix_FU, matrix_FS, matrix_FV);
+    matrix_FS(2,2) = 0;
+
+    //Calculate the best rank-2 approximation matrix F
+    Matrix matrix_Fq = matrix_FU * matrix_FS * matrix_FV;
+
+    //Computing the transformation matrix
+    Matrix matrix_T0(3,3,0.0);
+    matrix_T0.set_row(0, {sc_fc_x0, 0, -(centr_x0*sc_fc_x0)});
+    matrix_T0.set_row(0, {0, sc_fc_y0,-(centr_y0*sc_fc_y0)});
+    matrix_T0.set_row(0, {0,0,1});
+
+    Matrix matrix_T1(3,3,0.0);
+    matrix_T1.set_row(0, {sc_fc_x1, 0, -(centr_x1*sc_fc_x1)});
+    matrix_T1.set_row(0, {0, sc_fc_y0,-(centr_y1*sc_fc_y1)});
+    matrix_T1.set_row(0, {0,0,1});
 
 
+    // --- Denormalization ---
+    Matrix matrix_new_F = transpose(matrix_T1) * matrix_Fq * matrix_T0;
 
+    //Scaling F so that F(2,2) = 1
+    for (int i=0; i<3; i++){
+        for (int j=0; j<3; j++) {
+            matrix_new_F(i,j) = matrix_new_F(i,j) / matrix_new_F(2,2);
+        }
+    }
 
+    std::cout << matrix_new_F << " matrix_new_new_F" << std::endl;
 
-
-
-
-
-
-
-
-
-
-
-
-
+    //STEP 2 ------------Recover relative pose ---------------
 
 
     // TODO: Reconstruct 3D points. The main task is
