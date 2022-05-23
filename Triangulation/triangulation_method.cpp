@@ -137,6 +137,7 @@ bool Triangulation::triangulation(
         std::cout << "Input is valid, triangulation will be applied" << std::endl;
     } else {
         std::cout << "Input is invalid" << std::endl;
+        exit(0);
     }
 
     // TODO: Estimate relative pose of two views. This can be subdivided into
@@ -279,15 +280,15 @@ bool Triangulation::triangulation(
     Vector vector_f = matrix_V.get_column(matrix_V.cols()-1);
 
     //Computing matrix F
-    Matrix matrix_F(3, 3, 0.0);
+    Matrix33 matrix_F;
     matrix_F.set_row(0, {vector_f[0], vector_f[1], vector_f[2]});
     matrix_F.set_row(1, {vector_f[3], vector_f[4], vector_f[5]});
     matrix_F.set_row(2, {vector_f[6], vector_f[7], vector_f[8]});
 
     //Constraint enforcement (based on SVD) to find the closest rank-2 matrix
-    Matrix matrix_FU(3, 3, 0.0);
-    Matrix matrix_FS(3, 3, 0.0);
-    Matrix matrix_FV(3, 3, 0.0);
+    Matrix33 matrix_FU;
+    Matrix33 matrix_FS;
+    Matrix33 matrix_FV;
 
     svd_decompose(matrix_F, matrix_FU, matrix_FS, matrix_FV);
     matrix_FS(2,2) = 0;
@@ -296,12 +297,12 @@ bool Triangulation::triangulation(
     Matrix matrix_Fq = matrix_FU * matrix_FS * matrix_FV;
 
     //Computing the transformation matrix
-    Matrix matrix_T0(3,3,0.0);
+    Matrix33 matrix_T0;
     matrix_T0.set_row(0, {sc_fc_x0, 0, -(centr_x0*sc_fc_x0)});
     matrix_T0.set_row(0, {0, sc_fc_y0,-(centr_y0*sc_fc_y0)});
     matrix_T0.set_row(0, {0,0,1});
 
-    Matrix matrix_T1(3,3,0.0);
+    Matrix33 matrix_T1;
     matrix_T1.set_row(0, {sc_fc_x1, 0, -(centr_x1*sc_fc_x1)});
     matrix_T1.set_row(0, {0, sc_fc_y0,-(centr_y1*sc_fc_y1)});
     matrix_T1.set_row(0, {0,0,1});
@@ -317,10 +318,116 @@ bool Triangulation::triangulation(
         }
     }
 
-    std::cout << matrix_new_F << " matrix_new_new_F" << std::endl;
 
     //STEP 2 ------------Recover relative pose ---------------
+    // --- Find the 4 candidate relative poses (based on SVD) ---
 
+    // --- Determine the correct relative pose (i.e., R and t) from the fundamental matrix ---
+    //computing the matrix K (no skew), the same for both cameras
+    Matrix33  matrix_K;
+    matrix_K.set_row(0,{fx, 0, cx});
+    matrix_K.set_row(1,{0, fy, cy});
+    matrix_K.set_row(2,{0, 0, 1});
+
+    //compute essential matrix E = K(transp)FK
+    Matrix matrix_E = transpose(matrix_K) * matrix_new_F * matrix_K;
+
+    //initializing matrices W and Z
+    Matrix33 matrix_W;
+    matrix_W.set_row(0,{0, -1, 0});
+    matrix_W.set_row(1,{1, 0, 0});
+    matrix_W.set_row(2,{0, 0, 1});
+
+    Matrix33 matrix_Z;
+    matrix_Z.set_row(0,{0, 1, 0});
+    matrix_Z.set_row(1,{-1, 0, 0});
+    matrix_Z.set_row(2,{0, 0, 0});
+
+    //applying SVD to E matrix to obtain the U, Σ, V matrices
+    Matrix33 matrix_E_U;
+    Matrix33 matrix_E_S;
+    Matrix33 matrix_E_V;
+    svd_decompose(matrix_E,matrix_E_U,matrix_E_S, matrix_E_V);
+
+    //define translation matrix t from the 3rd column of U
+    Matrix matrix_t1(3,1,0.0);
+    matrix_t1.set_column(0,{matrix_E_U.get_column(2)}); //1st alternative
+    Matrix matrix_t2 = - matrix_t1; //2nd alternative
+
+    //Calculate rotation matrix R = UWV(transpose)
+    Matrix matrix_R1 =  matrix_E_U * matrix_W * transpose(matrix_E_V); //1st alternative
+    Matrix matrix_R2 = matrix_E_U * transpose(matrix_W) * transpose(matrix_E_V); //2nd alternative
+
+    //ensuring that the determinant is always positive and not >1
+    if (determinant(matrix_R1)<0){
+        matrix_R1 = -matrix_R1;
+    }
+
+    if (determinant(matrix_R2)<0){
+        matrix_R2 = -matrix_R2;
+    }
+
+    //checking if determinant(R) = 1.0 for both alternatives
+    if (determinant(matrix_R1)> 1.000001){
+        std::cout << "determinant of matrix R1 > 1" <<std::endl;
+        exit(0);
+    }
+
+    if (determinant(matrix_R2)> 1.000001){
+        std::cout << "determinant of matrix R2 > 1" <<std::endl;
+        exit(0);
+    }
+
+    //estimated 3D points are in front of both cameras
+    //STEP 3 ------------ Determine the 3D coordinates for all corresponding image points ---------------
+    //Compute the projection matrix M from K,R,t                  -------------->maybe use a function!!! to be added!!!!
+    Matrix34 matrix_Rt1; //constructed from R1 and t1
+    Matrix34 matrix_Rt2; //constructed from R1 and t2
+    Matrix34 matrix_Rt3; //constructed from R2 and t1
+    Matrix34 matrix_Rt4; //constructed from R2 and t2
+
+    matrix_Rt1.set_column(0, {matrix_R1.get_column(0)});
+    matrix_Rt1.set_column(1, {matrix_R1.get_column(1)});
+    matrix_Rt1.set_column(2, {matrix_R1.get_column(2)});
+    matrix_Rt1.set_column(3, {matrix_t1.get_column(0)});
+
+    matrix_Rt2.set_column(0, {matrix_R1.get_column(0)});
+    matrix_Rt2.set_column(1, {matrix_R1.get_column(1)});
+    matrix_Rt2.set_column(2, {matrix_R1.get_column(2)});
+    matrix_Rt2.set_column(3, {matrix_t2.get_column(0)});
+
+    matrix_Rt3.set_column(0, {matrix_R2.get_column(0)});
+    matrix_Rt3.set_column(1, {matrix_R2.get_column(1)});
+    matrix_Rt3.set_column(2, {matrix_R2.get_column(2)});
+    matrix_Rt3.set_column(3, {matrix_t1.get_column(0)});
+
+    matrix_Rt4.set_column(0, {matrix_R2.get_column(0)});
+    matrix_Rt4.set_column(1, {matrix_R2.get_column(1)});
+    matrix_Rt4.set_column(2, {matrix_R2.get_column(2)});
+    matrix_Rt4.set_column(3, {matrix_t2.get_column(0)});
+
+    Matrix M1 = matrix_K * matrix_Rt1;
+    Matrix M2 = matrix_K * matrix_Rt2;
+    Matrix M3 = matrix_K * matrix_Rt3;
+    Matrix M4 = matrix_K * matrix_Rt4;
+
+   //Compute the 3D point using the linear method (based on SVD) where AP=0
+   //create matrix A for all the 4 projection matrices
+
+
+
+
+
+
+
+
+
+
+
+
+    //Compute the 3D point using the linear method (based on SVD)
+    //[Optional] Non-linear least-squares refinement of the 3D point computed from the linear method
+    //Triangulate all corresponding image points
 
     // TODO: Reconstruct 3D points. The main task is
     //      - triangulate a pair of image points (i.e., compute the 3D coordinates for each corresponding point pair)
